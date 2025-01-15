@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubble Sort Visualizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        #array-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 300px;
+            margin-top: 20px;
+            border: 2px solid #000;
+            margin-bottom: 20px;
+        }
+
+        .bar {
+            width: 30px;
+            margin: 0 2px;
+            background-color: lightblue;
+            height: 100px;
+            display: inline-block;
+            transition: height 0.3s ease;
+        }
+
+        .highlight {
+            background-color: orange;
+        }
+
+        .swap {
+            background-color: red;
+        }
+
+        .sorted {
+            background-color: green;
+        }
+
+        button, input {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .step-text {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .progress-bar-container {
+            width: 80%;
+            margin: 20px auto;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: lightgray;
+        }
+
+        .progress-bar-inner {
+            height: 100%;
+            background-color: green;
+            width: 0;
+            transition: width 0.2s ease;
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-title {
+            font-size: 1.5em;
+            color: #2d3748;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .home-button {
+            background: #4299e1;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        #controls {
+            margin-top: 20px;
+        }
+
+        .array-values {
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .array-value {
+            display: inline-block;
+            width: 40px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="index.html" class="nav-title">
+                <i class="fas fa-stream"></i>
+               Bubble Sort Visualization
+            </a>
+            <a href="index.html" class="home-button">
+                <i class="fas fa-home"></i> Home
+            </a>
+        </div>
+    </nav>
+    <h1>Bubble Sort Visualizer</h1>
+    <div id="controls">
+        <label for="array-length">Array Length: </label>
+        <input type="number" id="array-length" value="10" min="2" max="50" />
+        <label for="speed-control">Speed: </label>
+        <input type="range" id="speed-control" min="100" max="2000" value="500" />
+        <span id="speed-value">500ms</span>
+    </div>
+
+    <div id="array-container"></div>
+    <div class="progress-bar-container">
+        <div class="progress-bar">
+            <div class="progress-bar-inner" id="progress-bar"></div>
+        </div>
+    </div>
+
+    <div class="step-text" id="step-text">Click "Start" to begin Bubble Sort</div>
+    <div class="array-values" id="array-values"></div>
+
+    <button onclick="startSorting()">Start Sorting</button>
+
+    <script>
+        let array = [];  // Dynamic array for sorting
+        let steps = 0;
+        let timer;
+        let delay = 500;  // Default speed
+
+        // Function to generate a random array of a given length
+        function generateArray(length) {
+            array = [];
+            for (let i = 0; i < length; i++) {
+                array.push(Math.floor(Math.random() * 100) + 1); // Random values between 1 and 100
+            }
+            displayArray();
+            displayArrayValues();
+        }
+
+        // Function to display the array visually as bars
+        function displayArray() {
+            const container = document.getElementById('array-container');
+            container.innerHTML = '';  // Clear existing bars
+            
+            array.forEach((value, index) => {
+                const bar = document.createElement('div');
+                bar.classList.add('bar');
+                bar.style.height = value * 3 + 'px'; // Scale the height for visualization
+                bar.setAttribute('data-index', index);
+                container.appendChild(bar);
+            });
+        }
+
+        // Function to display the array elements below the bars
+        function displayArrayValues() {
+            const valuesContainer = document.getElementById('array-values');
+            valuesContainer.innerHTML = '';  // Clear existing array values
+            
+            array.forEach(value => {
+                const valueElement = document.createElement('span');
+                valueElement.classList.add('array-value');
+                valueElement.textContent = value;
+                valuesContainer.appendChild(valueElement);
+            });
+        }
+
+        // Function to update progress bar
+        function updateProgressBar(percentage) {
+            document.getElementById('progress-bar').style.width = percentage + '%';
+        }
+
+        // Function to visualize Bubble Sort algorithm
+        async function bubbleSort() {
+            let n = array.length;
+            let stepText = document.getElementById('step-text');
+            let totalSteps = n * (n - 1) / 2; // Total comparisons in bubble sort
+
+            for (let i = 0; i < n - 1; i++) {
+                for (let j = 0; j < n - i - 1; j++) {
+                    // Highlight the two elements being compared
+                    highlightElements(j, j + 1);
+
+                    if (array[j] > array[j + 1]) {
+                        // Swap elements and visualize the swap
+                        swapElements(j, j + 1);
+                    }
+
+                    // Update progress bar and text
+                    updateProgressBar(((i * n + j) / totalSteps) * 100);
+
+                    // Wait before moving to the next comparison based on selected speed
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    displayArrayValues(); // Update array values after each comparison
+                }
+                // Mark this index as sorted
+                document.querySelectorAll('.bar')[n - i - 1].classList.add('sorted');
+                stepText.innerText = `Step ${i + 1}: Sorted elements up to index ${n - i - 1}`;
+            }
+            stepText.innerText = 'Sorting Complete!';
+        }
+
+        // Function to highlight two elements being compared
+        function highlightElements(index1, index2) {
+            const bars = document.querySelectorAll('.bar');
+            bars[index1].classList.add('highlight');
+            bars[index2].classList.add('highlight');
+            setTimeout(() => {
+                bars[index1].classList.remove('highlight');
+                bars[index2].classList.remove('highlight');
+            }, delay);
+        }
+
+        // Function to swap elements and visualize the swap
+        function swapElements(index1, index2) {
+            // Swap the array values
+            let temp = array[index1];
+            array[index1] = array[index2];
+            array[index2] = temp;
+
+            // Animate the swap visually
+            const bars = document.querySelectorAll('.bar');
+            bars[index1].classList.add('swap');
+            bars[index2].classList.add('swap');
+            setTimeout(() => {
+                bars[index1].style.height = array[index1] * 3 + 'px';
+                bars[index2].style.height = array[index2] * 3 + 'px';
+                bars[index1].classList.remove('swap');
+                bars[index2].classList.remove('swap');
+            }, 300);
+        }
+
+        // Function to start sorting when the user clicks the button
+        function startSorting() {
+            const arrayLength = document.getElementById('array-length').value;
+            delay = 2000 - document.getElementById('speed-control').value; // Reverse speed mapping
+            document.getElementById('speed-value').textContent = `${delay}ms`; // Update speed label
+            
+            generateArray(arrayLength);  // Generate new random array based on length
+            document.getElementById('step-text').innerText = 'Sorting in Progress...';
+            bubbleSort();
+        }
+
+        // Event listener to update speed value when slider is moved
+        document.getElementById('speed-control').addEventListener('input', (e) => {
+            delay = 2000 - e.target.value; // Reverse speed mapping
+            document.getElementById('speed-value').textContent = `${delay}ms`;
+        });
+
+        // Display the initial array
+        generateArray(10);  // Default array length 10
+    </script>
+
+</body>
+</html>

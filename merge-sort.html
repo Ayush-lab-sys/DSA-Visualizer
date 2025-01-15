@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merge Sort Visualization</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+
+    <style>
+        .array-bar {
+            transition: height 0.3s ease, background-color 0.3s ease;
+            margin: 0 1px;
+            position: relative;
+        }
+        
+        .bar-value {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .bar-value.above {
+            top: -20px;
+        }
+
+        .bar-value.inside {
+            bottom: 4px;
+            color: white;
+        }
+        
+        .controls {
+            user-select: none;
+        }
+
+        input[type="range"] {
+            cursor: pointer;
+        }
+
+        .status-text {
+            min-height: 1.5rem;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-title {
+            font-size: 1.5em;
+            color: #2d3748;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .home-button {
+            background: #4299e1;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="index.html" class="nav-title">
+                <i class="fas fa-stream"></i>
+               Merge Sort Visualization
+            </a>
+            <a href="index.html" class="home-button">
+                <i class="fas fa-home"></i> Home
+            </a>
+        </div>
+    </nav>
+    <div class="max-w-6xl mx-auto p-6">
+        <div class="bg-white rounded-2xl shadow-lg p-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">Merge Sort Visualization</h1>
+            
+            <!-- Controls -->
+            <div class="controls bg-gray-50 rounded-xl p-6 mb-8 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Array Size: <span id="size-value">20</span>
+                        </label>
+                        <input type="range" min="5" max="50" value="20" 
+                               class="w-full" id="size-slider">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Speed: <span id="speed-value">Normal</span>
+                        </label>
+                        <input type="range" min="1" max="5" value="3" 
+                               class="w-full" id="speed-slider">
+                    </div>
+                </div>
+                
+                <div class="flex gap-4">
+                    <button id="generate-btn" 
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors">
+                        Generate New Array
+                    </button>
+                    <button id="sort-btn" 
+                            class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition-colors">
+                        Start Sorting
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div class="status-text text-center text-gray-600 mb-4" id="status"></div>
+
+            <!-- Visualization Area -->
+            <div class="visualization bg-gray-50 rounded-xl p-4 min-h-[400px]" id="array-container">
+                <div class="h-full flex items-end justify-center pt-8" id="bars-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class MergeSortVisualizer {
+            constructor() {
+                this.array = [];
+                this.arrayContainer = document.getElementById('bars-container');
+                this.sizeSlider = document.getElementById('size-slider');
+                this.speedSlider = document.getElementById('speed-slider');
+                this.sizeValue = document.getElementById('size-value');
+                this.speedValue = document.getElementById('speed-value');
+                this.status = document.getElementById('status');
+                this.isSorting = false;
+
+                // Initialize controls
+                this.setupControls();
+                this.generateArray();
+            }
+
+            setupControls() {
+                document.getElementById('generate-btn').onclick = () => this.generateArray();
+                document.getElementById('sort-btn').onclick = () => this.startSort();
+
+                this.sizeSlider.oninput = () => {
+                    this.sizeValue.textContent = this.sizeSlider.value;
+                    this.generateArray();
+                };
+
+                this.speedSlider.oninput = () => {
+                    const speeds = ['Very Slow', 'Slow', 'Normal', 'Fast', 'Very Fast'];
+                    this.speedValue.textContent = speeds[this.speedSlider.value - 1];
+                };
+            }
+
+            generateArray() {
+                if (this.isSorting) return;
+                
+                const size = parseInt(this.sizeSlider.value);
+                this.array = Array(size).fill(0)
+                    .map(() => Math.floor(Math.random() * 100) + 1);
+                this.renderArray();
+                this.status.textContent = 'Array generated';
+            }
+
+            renderArray(highlightIndices = [], compareIndices = []) {
+                this.arrayContainer.innerHTML = '';
+                const maxHeight = 300;
+                const width = Math.min(Math.floor(600 / this.array.length), 30);
+
+                this.array.forEach((value, idx) => {
+                    const barContainer = document.createElement('div');
+                    barContainer.className = 'array-bar flex flex-col items-center';
+                    
+                    const bar = document.createElement('div');
+                    bar.style.height = `${(value / 100) * maxHeight}px`;
+                    bar.style.width = `${width}px`;
+                    
+                    // Color logic
+                    if (highlightIndices.includes(idx)) {
+                        bar.style.backgroundColor = '#4ADE80'; // Success green
+                    } else if (compareIndices.includes(idx)) {
+                        bar.style.backgroundColor = '#60A5FA'; // Compare blue
+                    } else {
+                        bar.style.backgroundColor = '#6B7280'; // Default gray
+                    }
+
+                    // Add value label
+                    const valueLabel = document.createElement('div');
+                    valueLabel.className = 'bar-value inside';
+                    valueLabel.textContent = value;
+
+                    bar.appendChild(valueLabel);
+                    barContainer.appendChild(bar);
+                    this.arrayContainer.appendChild(barContainer);
+                });
+            }
+
+            sleep(ms) {
+                const speeds = [1000, 500, 250, 100, 50];
+                return new Promise(resolve => 
+                    setTimeout(resolve, speeds[this.speedSlider.value - 1]));
+            }
+
+            async merge(start, mid, end) {
+                const left = this.array.slice(start, mid + 1);
+                const right = this.array.slice(mid + 1, end + 1);
+                let i = 0, j = 0, k = start;
+
+                while (i < left.length && j < right.length) {
+                    // Highlight comparing elements
+                    this.renderArray([], [start + i, mid + 1 + j]);
+                    await this.sleep();
+
+                    if (left[i] <= right[j]) {
+                        this.array[k] = left[i];
+                        i++;
+                    } else {
+                        this.array[k] = right[j];
+                        j++;
+                    }
+                    k++;
+                }
+
+                while (i < left.length) {
+                    this.array[k] = left[i];
+                    i++;
+                    k++;
+                    this.renderArray([], [k - 1]);
+                    await this.sleep();
+                }
+
+                while (j < right.length) {
+                    this.array[k] = right[j];
+                    j++;
+                    k++;
+                    this.renderArray([], [k - 1]);
+                    await this.sleep();
+                }
+
+                // Highlight sorted portion
+                this.renderArray([...Array(end - start + 1).keys()].map(x => x + start));
+                await this.sleep();
+            }
+
+            async mergeSort(start = 0, end = this.array.length - 1) {
+                if (start < end) {
+                    const mid = Math.floor((start + end) / 2);
+                    this.status.textContent = `Splitting array from index ${start} to ${end}`;
+                    await this.mergeSort(start, mid);
+                    await this.mergeSort(mid + 1, end);
+                    this.status.textContent = `Merging subarrays from index ${start} to ${end}`;
+                    await this.merge(start, mid, end);
+                }
+            }
+
+            async startSort() {
+                if (this.isSorting) return;
+                this.isSorting = true;
+                document.getElementById('sort-btn').disabled = true;
+                document.getElementById('generate-btn').disabled = true;
+                this.sizeSlider.disabled = true;
+
+                await this.mergeSort();
+                
+                this.status.textContent = 'Sorting completed!';
+                this.renderArray([...Array(this.array.length).keys()]);
+                
+                this.isSorting = false;
+                document.getElementById('sort-btn').disabled = false;
+                document.getElementById('generate-btn').disabled = false;
+                this.sizeSlider.disabled = false;
+            }
+        }
+
+        // Initialize the visualizer
+        const visualizer = new MergeSortVisualizer();
+    </script>
+</body>
+</html>

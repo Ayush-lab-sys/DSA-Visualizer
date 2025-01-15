@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue Visualization - DSA Visualizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+    <style>
+        /* Common styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-title {
+            font-size: 1.5em;
+            color: #2d3748;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .home-button {
+            background: #4299e1;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .visualization-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        input {
+            padding: 10px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1em;
+            width: 120px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .enqueue-btn {
+            background: #48bb78;
+            color: white;
+        }
+
+        .enqueue-btn:hover {
+            background: #38a169;
+        }
+
+        .dequeue-btn {
+            background: #f56565;
+            color: white;
+        }
+
+        .dequeue-btn:hover {
+            background: #e53e3e;
+        }
+
+        .clear-btn {
+            background: #718096;
+            color: white;
+        }
+
+        .clear-btn:hover {
+            background: #4a5568;
+        }
+
+        /* Queue specific styles */
+        .queue-container {
+            position: relative;
+            width: 100%;
+            height: 150px;
+            border: 3px solid #4a5568;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f8fafc;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .queue-element {
+            min-width: 80px;
+            height: 80px;
+            background: #4299e1;
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .queue-element.dequeue {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        .queue-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 2;
+        }
+
+        .info-item {
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: #4a5568;
+        }
+
+        .empty-queue-message {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #a0aec0;
+            font-size: 1.1em;
+        }
+
+        .pointer {
+            position: absolute;
+            background: #4a5568;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+
+        .front-pointer {
+            top: -25px;
+        }
+
+        .rear-pointer {
+            bottom: -25px;
+        }
+
+        .pointer::after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 15px;
+            background: #4a5568;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .front-pointer::after {
+            top: 100%;
+        }
+
+        .rear-pointer::after {
+            bottom: 100%;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="index.html" class="nav-title">
+                <i class="fas fa-stream"></i>
+                Queue Visualization
+            </a>
+            <a href="index.html" class="home-button">
+                <i class="fas fa-home"></i> Home
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="visualization-section">
+            <div class="controls">
+                <input type="text" id="element-input" placeholder="Enter value">
+                <button class="enqueue-btn" onclick="queue.enqueue()">
+                    <i class="fas fa-plus"></i> Enqueue
+                </button>
+                <button class="dequeue-btn" onclick="queue.dequeue()">
+                    <i class="fas fa-minus"></i> Dequeue
+                </button>
+                <button class="clear-btn" onclick="queue.clear()">
+                    <i class="fas fa-trash"></i> Clear
+                </button>
+            </div>
+
+            <div class="queue-container" id="queue-container">
+                <div class="empty-queue-message">Queue is empty</div>
+                <div class="queue-info">
+                    <div class="info-item">Size: <span id="queue-size">0</span></div>
+                    <div class="info-item">Front: <span id="queue-front">-1</span></div>
+                    <div class="info-item">Rear: <span id="queue-rear">-1</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class Queue {
+            constructor() {
+                this.items = [];
+                this.container = document.getElementById('queue-container');
+                this.maxSize = 8;
+            }
+
+            enqueue() {
+                const input = document.getElementById('element-input');
+                const value = input.value.trim();
+                
+                if (!value) {
+                    alert('Please enter a value');
+                    return;
+                }
+
+                if (this.items.length >= this.maxSize) {
+                    alert('Queue is full!');
+                    return;
+                }
+
+                this.items.push(value);
+                this.render();
+                input.value = '';
+                input.focus();
+            }
+
+            dequeue() {
+                if (this.items.length === 0) {
+                    alert('Queue is empty!');
+                    return;
+                }
+
+                const firstElement = this.container.querySelector('.queue-element');
+                if (firstElement) {
+                    firstElement.classList.add('dequeue');
+                    setTimeout(() => {
+                        this.items.shift();
+                        this.render();
+                    }, 300);
+                }
+            }
+
+            clear() {
+                this.items = [];
+                this.render();
+            }
+
+            render() {
+                this.container.innerHTML = '';
+
+                // Add queue info
+                const queueInfo = document.createElement('div');
+                queueInfo.className = 'queue-info';
+                queueInfo.innerHTML = `
+                    <div class="info-item">Size: <span>${this.items.length}</span></div>
+                    <div class="info-item">Front: <span>${this.items.length > 0 ? 0 : -1}</span></div>
+                    <div class="info-item">Rear: <span>${this.items.length - 1}</span></div>
+                `;
+                this.container.appendChild(queueInfo);
+
+                // Show empty queue message if needed
+                if (this.items.length === 0) {
+                    const emptyMessage = document.createElement('div');
+                    emptyMessage.className = 'empty-queue-message';
+                    emptyMessage.textContent = 'Queue is empty';
+                    this.container.appendChild(emptyMessage);
+                    return;
+                }
+
+                // Render queue elements
+                this.items.forEach((item, index) => {
+                    const element = document.createElement('div');
+                    element.className = 'queue-element';
+                    element.textContent = item;
+
+                    // Add front pointer to first element
+                    if (index === 0) {
+                        const frontPointer = document.createElement('div');
+                        frontPointer.className = 'pointer front-pointer';
+                        frontPointer.textContent = 'Front';
+                        element.appendChild(frontPointer);
+                    }
+
+                    // Add rear pointer to last element
+                    if (index === this.items.length - 1) {
+                        const rearPointer = document.createElement('div');
+                        rearPointer.className = 'pointer rear-pointer';
+                        rearPointer.textContent = 'Rear';
+                        element.appendChild(rearPointer);
+                    }
+
+                    this.container.appendChild(element);
+                });
+            }
+        }
+
+        const queue = new Queue();
+
+        // Handle Enter key press
+        document.getElementById('element-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                queue.enqueue();
+            }
+        });
+    </script>
+</body>
+</html>

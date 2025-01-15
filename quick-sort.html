@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Sort Visualizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        #array-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 300px;
+            margin-top: 20px;
+            border: 2px solid #000;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .bar {
+            width: 30px;
+            margin: 0 2px;
+            background-color: lightblue;
+            height: 100px;
+            display: inline-block;
+        }
+
+        .highlight {
+            background-color: orange;
+        }
+
+        .pivot {
+            background-color: red;
+        }
+
+        .sorted {
+            background-color: green;
+        }
+
+        .array-values {
+            margin-top: 20px;
+            font-size: 16px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .array-value {
+            margin: 0 2px;
+            width: 30px;
+            text-align: center;
+        }
+
+        button, input {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-title {
+            font-size: 1.5em;
+            color: #2d3748;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .home-button {
+            background: #4299e1;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="index.html" class="nav-title">
+                <i class="fas fa-stream"></i>
+                Quick Sort Visualization
+            </a>
+            <a href="index.html" class="home-button">
+                <i class="fas fa-home"></i> Home
+            </a>
+        </div>
+    </nav>
+    <h1>Quick Sort Visualizer</h1>
+    <label for="array-length">Array Length: </label>
+    <input type="number" id="array-length" value="10" min="2" max="20">
+    <label for="speed-control">Speed (ms): </label>
+    <input type="range" id="speed-control" min="100" max="2000" value="500">
+    <button onclick="startSorting()">Start Sorting</button>
+
+    <div id="array-container"></div>
+    <div class="array-values" id="array-values"></div>
+    <p id="step-description">Click "Start Sorting" to begin</p>
+
+    <script>
+        let array = [];
+        let delay = 500;
+
+        // Generate and display the array
+        function generateArray(length) {
+            array = Array.from({ length }, () => Math.floor(Math.random() * 100) + 1);
+            displayArray();
+        }
+
+        function displayArray() {
+            const container = document.getElementById('array-container');
+            container.innerHTML = '';
+            const valuesContainer = document.getElementById('array-values');
+            valuesContainer.innerHTML = '';
+            array.forEach((value) => {
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.height = value * 3 + 'px';
+                container.appendChild(bar);
+
+                const valueSpan = document.createElement('div');
+                valueSpan.className = 'array-value';
+                valueSpan.textContent = value;
+                valuesContainer.appendChild(valueSpan);
+            });
+        }
+
+        // Highlight elements
+        function highlight(indices, className) {
+            const bars = document.querySelectorAll('.bar');
+            indices.forEach(index => {
+                bars[index].classList.add(className);
+            });
+        }
+
+        function removeHighlight(indices, className) {
+            const bars = document.querySelectorAll('.bar');
+            indices.forEach(index => {
+                bars[index].classList.remove(className);
+            });
+        }
+
+        // Swap elements visually
+        function swap(i, j) {
+            const bars = document.querySelectorAll('.bar');
+            const values = document.querySelectorAll('.array-value');
+            
+            // Swap bar heights
+            let tempHeight = bars[i].style.height;
+            bars[i].style.height = bars[j].style.height;
+            bars[j].style.height = tempHeight;
+
+            // Swap text values
+            let tempText = values[i].textContent;
+            values[i].textContent = values[j].textContent;
+            values[j].textContent = tempText;
+        }
+
+        // Partition function
+        async function partition(low, high) {
+            const pivotValue = array[high];
+            document.getElementById('step-description').textContent = `Choosing pivot: ${pivotValue}`;
+            highlight([high], 'pivot');
+
+            let i = low - 1;
+            for (let j = low; j < high; j++) {
+                highlight([j], 'highlight');
+                await sleep(delay);
+
+                if (array[j] < pivotValue) {
+                    i++;
+                    if (i !== j) {
+                        swap(i, j);
+                        [array[i], array[j]] = [array[j], array[i]];
+                    }
+                }
+
+                removeHighlight([j], 'highlight');
+            }
+
+            swap(i + 1, high);
+            [array[i + 1], array[high]] = [array[high], array[i + 1]];
+            removeHighlight([high], 'pivot');
+            highlight([i + 1], 'sorted');
+            await sleep(delay);
+            return i + 1;
+        }
+
+        // QuickSort function
+        async function quickSort(low, high) {
+            if (low < high) {
+                const pivotIndex = await partition(low, high);
+                await quickSort(low, pivotIndex - 1);
+                await quickSort(pivotIndex + 1, high);
+            } else if (low === high) {
+                highlight([low], 'sorted');
+            }
+        }
+
+        // Start sorting
+        async function startSorting() {
+    const maxSpeed = 2000; // Maximum speed in milliseconds
+    delay = maxSpeed - document.getElementById('speed-control').value; // Invert the slider value
+    generateArray(document.getElementById('array-length').value);
+    document.getElementById('step-description').textContent = 'Sorting in progress...';
+    await quickSort(0, array.length - 1);
+    document.getElementById('step-description').textContent = 'Array sorted!';
+}
+
+
+        // Sleep function for delays
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Initial array generation
+        generateArray(10);
+    </script>
+</body>
+</html>

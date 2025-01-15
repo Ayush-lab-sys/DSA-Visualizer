@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Tree Visualizer</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+
+    <style>
+        /* Previous styles remain the same */
+        .tree-container {
+            min-height: 600px;
+            transform-origin: top center;
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+
+        .tree-node {
+            width: 50px;
+            height: 50px;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .connector {
+            position: absolute;
+            height: 2px;
+            background: #94a3b8;
+            transform-origin: left center;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+
+        .node-input {
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .node-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn {
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* New animation styles */
+        @keyframes highlightNode {
+            0% { transform: scale(1) translate(-50%, -50%); background-color: #3b82f6; }
+            50% { transform: scale(1.2) translate(-50%, -50%); background-color: #22c55e; }
+            100% { transform: scale(1) translate(-50%, -50%); background-color: #3b82f6; }
+        }
+
+        .node-highlight {
+            animation: highlightNode 1s ease;
+        }
+
+        .traversal-path {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            z-index: 1000;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-title {
+            font-size: 1.5em;
+            color: #2d3748;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .home-button {
+            background: #4299e1;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="index.html" class="nav-title">
+                <i class="fas fa-stream"></i>
+                Binary Tree Visualization
+            </a>
+            <a href="index.html" class="home-button">
+                <i class="fas fa-home"></i> Home
+            </a>
+        </div>
+    </nav>
+    <div class="max-w-6xl mx-auto p-6">
+        <div class="bg-white rounded-2xl shadow-lg p-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-8">Binary Tree Visualizer</h1>
+            
+            <!-- Previous control panel -->
+            <div class="bg-gray-50 rounded-xl p-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <input type="text" id="node-value" placeholder="Node Value" 
+                           class="node-input w-full px-4 py-2 rounded-lg bg-white border border-gray-200 focus:outline-none">
+                    <input type="text" id="parent-value" placeholder="Parent Value" 
+                           class="node-input w-full px-4 py-2 rounded-lg bg-white border border-gray-200 focus:outline-none">
+                    <select id="position" 
+                            class="node-input w-full px-4 py-2 rounded-lg bg-white border border-gray-200 focus:outline-none">
+                        <option value="left">Left Child</option>
+                        <option value="right">Right Child</option>
+                    </select>
+                    <div class="flex gap-2">
+                        <button onclick="binaryTreeVisualizer.addNode()" 
+                                class="btn flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg focus:outline-none">
+                            Add
+                        </button>
+                        <button onclick="binaryTreeVisualizer.removeNode()" 
+                                class="btn flex-1 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg focus:outline-none">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New traversal controls -->
+            <div class="bg-gray-50 rounded-xl p-6 mb-8">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Tree Traversals</h2>
+                <div class="flex gap-4">
+                    <button onclick="binaryTreeVisualizer.startTraversal('inorder')" 
+                            class="btn bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg focus:outline-none">
+                        Inorder
+                    </button>
+                    <button onclick="binaryTreeVisualizer.startTraversal('preorder')" 
+                            class="btn bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg focus:outline-none">
+                        Preorder
+                    </button>
+                    <button onclick="binaryTreeVisualizer.startTraversal('postorder')" 
+                            class="btn bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-lg focus:outline-none">
+                        Postorder
+                    </button>
+                </div>
+            </div>
+
+            <div class="relative overflow-auto bg-gray-50 rounded-xl p-4" style="min-height: 600px;">
+                <div id="tree-container" class="tree-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="traversal-path" class="traversal-path" style="display: none;">
+        <span class="font-semibold">Traversal Path: </span>
+        <span id="traversal-nodes"></span>
+    </div>
+
+    <script>
+        // Previous TreeNode class remains the same
+        class TreeNode {
+            constructor(value) {
+                this.value = value;
+                this.left = null;
+                this.right = null;
+            }
+        }
+
+        class BinaryTreeVisualizer {
+            constructor() {
+                this.root = null;
+                this.container = document.getElementById("tree-container");
+                this.horizontalSpacing = 80;
+                this.verticalSpacing = 100;
+                this.centerX = 500;
+                this.centerY = 80;
+                this.isAnimating = false;
+                this.animationDelay = 1000; // 1 second delay between nodes
+            }
+
+            // Previous methods remain the same...
+            // Add new traversal methods
+
+            async startTraversal(type) {
+                if (this.isAnimating) return;
+                this.isAnimating = true;
+                
+                const traversalPath = [];
+                const pathElement = document.getElementById('traversal-path');
+                const nodesElement = document.getElementById('traversal-nodes');
+                
+                pathElement.style.display = 'block';
+                nodesElement.textContent = '';
+
+                switch (type) {
+                    case 'inorder':
+                        await this.inorderTraversal(this.root, traversalPath);
+                        break;
+                    case 'preorder':
+                        await this.preorderTraversal(this.root, traversalPath);
+                        break;
+                    case 'postorder':
+                        await this.postorderTraversal(this.root, traversalPath);
+                        break;
+                }
+
+                setTimeout(() => {
+                    pathElement.style.display = 'none';
+                    this.isAnimating = false;
+                }, 2000);
+            }
+
+            async highlightNode(value) {
+                const nodeElement = Array.from(document.getElementsByClassName('tree-node'))
+                    .find(node => node.textContent === value);
+                
+                if (nodeElement) {
+                    nodeElement.classList.add('node-highlight');
+                    const traversalNodes = document.getElementById('traversal-nodes');
+                    traversalNodes.textContent += (traversalNodes.textContent ? ' → ' : '') + value;
+                    
+                    await new Promise(resolve => setTimeout(resolve, this.animationDelay));
+                    nodeElement.classList.remove('node-highlight');
+                }
+            }
+
+            async inorderTraversal(node, path) {
+                if (!node) return;
+                await this.inorderTraversal(node.left, path);
+                await this.highlightNode(node.value);
+                path.push(node.value);
+                await this.inorderTraversal(node.right, path);
+            }
+
+            async preorderTraversal(node, path) {
+                if (!node) return;
+                await this.highlightNode(node.value);
+                path.push(node.value);
+                await this.preorderTraversal(node.left, path);
+                await this.preorderTraversal(node.right, path);
+            }
+
+            async postorderTraversal(node, path) {
+                if (!node) return;
+                await this.postorderTraversal(node.left, path);
+                await this.postorderTraversal(node.right, path);
+                await this.highlightNode(node.value);
+                path.push(node.value);
+            }
+
+            addNode() {
+                const value = document.getElementById("node-value").value.trim();
+                const parentValue = document.getElementById("parent-value").value.trim();
+                const position = document.getElementById("position").value;
+
+                if (!value) {
+                    this.showToast("Please enter a node value");
+                    return;
+                }
+
+                if (!this.root) {
+                    this.root = new TreeNode(value);
+                } else if (!parentValue) {
+                    this.showToast("Parent value is required for non-root nodes");
+                    return;
+                } else {
+                    const parentNode = this.findNode(this.root, parentValue);
+                    if (!parentNode) {
+                        this.showToast("Parent node not found");
+                        return;
+                    }
+                    
+                    if (position === "left") {
+                        if (parentNode.left) {
+                            this.showToast("Left child already exists");
+                            return;
+                        }
+                        parentNode.left = new TreeNode(value);
+                    } else {
+                        if (parentNode.right) {
+                            this.showToast("Right child already exists");
+                            return;
+                        }
+                        parentNode.right = new TreeNode(value);
+                    }
+                }
+
+                this.render();
+                this.clearInputs();
+            }
+
+            removeNode() {
+                const value = document.getElementById("node-value").value.trim();
+
+                if (!value) {
+                    this.showToast("Please enter a node value to remove");
+                    return;
+                }
+
+                if (value === this.root?.value && (!this.root.left && !this.root.right)) {
+                    this.root = null;
+                } else {
+                    this.root = this.removeNodeRecursively(this.root, value);
+                }
+
+                this.render();
+                this.clearInputs();
+            }
+
+            removeNodeRecursively(node, value) {
+                if (!node) return null;
+
+                if (node.value === value) {
+                    if (!node.left && !node.right) return null;
+                    if (!node.left) return node.right;
+                    if (!node.right) return node.left;
+
+                    const minNode = this.findMin(node.right);
+                    node.value = minNode.value;
+                    node.right = this.removeNodeRecursively(node.right, minNode.value);
+                } else {
+                    node.left = this.removeNodeRecursively(node.left, value);
+                    node.right = this.removeNodeRecursively(node.right, value);
+                }
+
+                return node;
+            }
+
+            findNode(node, value) {
+                if (!node) return null;
+                if (node.value === value) return node;
+                return this.findNode(node.left, value) || this.findNode(node.right, value);
+            }
+
+            findMin(node) {
+                while (node.left) node = node.left;
+                return node;
+            }
+
+            render() {
+                this.container.innerHTML = "";
+                if (this.root) {
+                    this.renderTree(this.root, this.centerX, this.centerY, 0);
+                }
+            }
+
+            renderTree(node, x, y, level) {
+                if (!node) return;
+
+                // Create node element with improved visibility
+                const nodeElement = document.createElement("div");
+                nodeElement.className = "tree-node bg-blue-500 rounded-full shadow-lg flex items-center justify-center text-white font-semibold";
+                nodeElement.textContent = node.value;
+                nodeElement.style.left = `${x}px`;
+                nodeElement.style.top = `${y}px`;
+                this.container.appendChild(nodeElement);
+
+                const spacing = this.horizontalSpacing * Math.pow(1.5, 3 - level);
+
+                if (node.left) {
+                    const leftX = x - spacing;
+                    const leftY = y + this.verticalSpacing;
+                    this.createConnector(x, y, leftX, leftY);
+                    this.renderTree(node.left, leftX, leftY, level + 1);
+                }
+
+                if (node.right) {
+                    const rightX = x + spacing;
+                    const rightY = y + this.verticalSpacing;
+                    this.createConnector(x, y, rightX, rightY);
+                    this.renderTree(node.right, rightX, rightY, level + 1);
+                }
+            }
+
+            createConnector(x1, y1, x2, y2) {
+                const connector = document.createElement("div");
+                connector.className = "connector";
+                
+                const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+                connector.style.width = `${length}px`;
+                connector.style.left = `${x1}px`;
+                connector.style.top = `${y1 + 25}px`;
+                connector.style.transform = `rotate(${angle}deg)`;
+
+                this.container.appendChild(connector);
+            }
+
+            clearInputs() {
+                document.getElementById("node-value").value = "";
+                document.getElementById("parent-value").value = "";
+            }
+
+            showToast(message) {
+                const toast = document.createElement("div");
+                toast.className = "fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300";
+                toast.textContent = message;
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.style.opacity = "0";
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+        }
+     
+
+        const binaryTreeVisualizer = new BinaryTreeVisualizer();
+    </script>
+</body>
+</html>

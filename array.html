@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Array Visualization - DSA Visualizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+    <style>
+        /* Common styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-title {
+            font-size: 1.5em;
+            color: #2d3748;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .home-button {
+            background: #4299e1;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .visualization-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        input {
+            padding: 10px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1em;
+            width: 150px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .add-btn {
+            background: #48bb78;
+            color: white;
+        }
+
+        .add-btn:hover {
+            background: #38a169;
+        }
+
+        .update-btn {
+            background: #4299e1;
+            color: white;
+        }
+
+        .update-btn:hover {
+            background: #3182ce;
+        }
+
+        .remove-btn {
+            background: #f56565;
+            color: white;
+        }
+
+        .remove-btn:hover {
+            background: #e53e3e;
+        }
+
+        /* Array visualization styles */
+        .array-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .array-element {
+            width: 80px;
+            height: 80px;
+            background: #4299e1;
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .array-index {
+            position: absolute;
+            top: -20px;
+            font-size: 0.8em;
+            background: #2d3748;
+            color: white;
+            padding: 3px 6px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="index.html" class="nav-title">
+                <i class="fas fa-stream"></i>
+                Array Visualization
+            </a>
+            <a href="index.html" class="home-button">
+                <i class="fas fa-home"></i> Home
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="visualization-section">
+            <div class="controls">
+                <input type="text" id="element-input" placeholder="Enter value">
+                <input type="number" id="index-input" placeholder="Index (optional)" min="0">
+                <button class="add-btn" onclick="arrayVisualizer.addElement()">
+                    <i class="fas fa-plus"></i> Add
+                </button>
+                <button class="update-btn" onclick="arrayVisualizer.updateElement()">
+                    <i class="fas fa-edit"></i> Update
+                </button>
+                <button class="remove-btn" onclick="arrayVisualizer.removeElement()">
+                    <i class="fas fa-minus"></i> Remove
+                </button>
+            </div>
+
+            <div class="array-container" id="array-container"></div>
+        </div>
+    </div>
+
+    <script>
+        class ArrayVisualizer {
+            constructor() {
+                this.array = [];
+                this.container = document.getElementById('array-container');
+            }
+
+            addElement() {
+                const value = document.getElementById('element-input').value.trim();
+                const index = document.getElementById('index-input').value.trim();
+                
+                if (!value) {
+                    alert('Please enter a value');
+                    return;
+                }
+
+                if (index === '') {
+                    this.array.push(value);
+                } else if (index >= 0 && index <= this.array.length) {
+                    this.array.splice(Number(index), 0, value);
+                } else {
+                    alert('Invalid index');
+                    return;
+                }
+
+                this.render();
+            }
+
+            updateElement() {
+                const value = document.getElementById('element-input').value.trim();
+                const index = document.getElementById('index-input').value.trim();
+
+                if (!value || index === '') {
+                    alert('Please enter both a value and a valid index');
+                    return;
+                }
+
+                if (index >= 0 && index < this.array.length) {
+                    this.array[Number(index)] = value;
+                    this.render();
+                } else {
+                    alert('Invalid index');
+                }
+            }
+
+            removeElement() {
+                const index = document.getElementById('index-input').value.trim();
+
+                if (index === '') {
+                    alert('Please enter an index');
+                    return;
+                }
+
+                if (index >= 0 && index < this.array.length) {
+                    this.array.splice(Number(index), 1);
+                    this.render();
+                } else {
+                    alert('Invalid index');
+                }
+            }
+
+            render() {
+                this.container.innerHTML = '';
+                this.array.forEach((value, index) => {
+                    const element = document.createElement('div');
+                    element.className = 'array-element';
+                    element.innerHTML = `
+                        <div>${value}</div>
+                        <div class="array-index">[${index}]</div>
+                    `;
+                    this.container.appendChild(element);
+                });
+            }
+        }
+
+        const arrayVisualizer = new ArrayVisualizer();
+    </script>
+</body>
+</html>

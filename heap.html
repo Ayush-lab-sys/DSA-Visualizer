@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
+            background-color: #f0f2f5;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        #canvas {
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin: 10px 0;
+        }
+        .controls {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        button {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background-color: #357abd;
+            transform: translateY(-1px);
+        }
+        button.danger { background-color: #dc3545; }
+        button.success { background-color: #28a745; }
+        input {
+            padding: 8px 12px;
+            border: 2px solid #dde1e7;
+            border-radius: 5px;
+            width: 100px;
+        }
+        #operations {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-title {
+            font-size: 1.5em;
+            color: #2d3748;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .home-button {
+            background: #4299e1;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="index.html" class="nav-title">
+                <i class="fas fa-stream"></i>
+                Min-Heap Visualization
+            </a>
+            <a href="index.html" class="home-button">
+                <i class="fas fa-home"></i> Home
+            </a>
+        </div>
+    </nav>
+    <div class="container">
+        <h1>Min-Heap Visualizer</h1>
+        <div class="controls">
+            <input type="number" id="insertValue" placeholder="Enter value">
+            <button onclick="insertNode()">Insert</button>
+            <button class="success" onclick="extractMin()">Extract Min</button>
+            <button class="danger" onclick="clearHeap()">Clear Heap</button>
+        </div>
+        <canvas id="canvas" width="800" height="400"></canvas>
+        <div id="operations"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const RADIUS = 25;
+        let heap = [];
+        let animating = false;
+
+        class HeapNode {
+            constructor(value) {
+                this.value = value;
+                this.x = 0;
+                this.y = 0;
+                this.targetX = 0;
+                this.targetY = 0;
+                this.color = '#4a90e2';
+            }
+        }
+
+        function calculateNodePosition(index) {
+            const level = Math.floor(Math.log2(index + 1));
+            const levelWidth = canvas.width - 100;
+            const levelStart = 50;
+            const verticalSpacing = 70;
+            const nodesInLevel = Math.pow(2, level);
+            const horizontalSpacing = levelWidth / nodesInLevel;
+            const offset = index - Math.pow(2, level) + 1;
+
+            return {
+                x: levelStart + horizontalSpacing * offset + horizontalSpacing/2,
+                y: 50 + level * verticalSpacing
+            };
+        }
+
+        function updatePositions() {
+            heap.forEach((node, index) => {
+                const pos = calculateNodePosition(index);
+                node.targetX = pos.x;
+                node.targetY = pos.y;
+            });
+        }
+
+        async function insertNode() {
+            if (animating) return;
+            const value = parseInt(document.getElementById('insertValue').value);
+            if (isNaN(value)) return;
+
+            animating = true;
+            const newNode = new HeapNode(value);
+            const startPos = { x: canvas.width/2, y: canvas.height };
+            newNode.x = startPos.x;
+            newNode.y = startPos.y;
+            heap.push(newNode);
+            
+            updatePositions();
+            await animateNode(heap.length - 1);
+            await heapifyUp(heap.length - 1);
+            
+            document.getElementById('insertValue').value = '';
+            logOperation(`Inserted ${value}`);
+            animating = false;
+        }
+
+        async function extractMin() {
+            if (animating || heap.length === 0) return;
+            animating = true;
+
+            const minValue = heap[0].value;
+            heap[0].color = '#dc3545';
+            draw();
+            await sleep(500);
+
+            if (heap.length > 1) {
+                heap[0] = heap.pop();
+                updatePositions();
+                await heapifyDown(0);
+            } else {
+                heap.pop();
+            }
+
+            logOperation(`Extracted min: ${minValue}`);
+            animating = false;
+            draw();
+        }
+
+        async function heapifyUp(index) {
+            while (index > 0) {
+                const parentIndex = Math.floor((index - 1) / 2);
+                if (heap[parentIndex].value > heap[index].value) {
+                    // Highlight nodes being compared
+                    heap[index].color = '#28a745';
+                    heap[parentIndex].color = '#dc3545';
+                    draw();
+                    await sleep(500);
+
+                    // Swap
+                    [heap[index], heap[parentIndex]] = [heap[parentIndex], heap[index]];
+                    updatePositions();
+                    await animateNodes();
+
+                    // Reset colors
+                    heap[index].color = '#4a90e2';
+                    heap[parentIndex].color = '#4a90e2';
+                    index = parentIndex;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        async function heapifyDown(index) {
+            while (true) {
+                let smallest = index;
+                const left = 2 * index + 1;
+                const right = 2 * index + 2;
+
+                if (left < heap.length && heap[left].value < heap[smallest].value) {
+                    smallest = left;
+                }
+                if (right < heap.length && heap[right].value < heap[smallest].value) {
+                    smallest = right;
+                }
+
+                if (smallest !== index) {
+                    heap[index].color = '#dc3545';
+                    heap[smallest].color = '#28a745';
+                    draw();
+                    await sleep(500);
+
+                    [heap[index], heap[smallest]] = [heap[smallest], heap[index]];
+                    updatePositions();
+                    await animateNodes();
+
+                    heap[index].color = '#4a90e2';
+                    heap[smallest].color = '#4a90e2';
+                    index = smallest;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        async function animateNode(index) {
+            const steps = 20;
+            const node = heap[index];
+            const dx = (node.targetX - node.x) / steps;
+            const dy = (node.targetY - node.y) / steps;
+
+            for (let i = 0; i < steps; i++) {
+                node.x += dx;
+                node.y += dy;
+                draw();
+                await sleep(20);
+            }
+
+            node.x = node.targetX;
+            node.y = node.targetY;
+            draw();
+        }
+
+        async function animateNodes() {
+            const promises = heap.map((_, index) => animateNode(index));
+            await Promise.all(promises);
+        }
+
+        function clearHeap() {
+            heap = [];
+            draw();
+            document.getElementById('operations').innerHTML = '';
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function logOperation(message) {
+            const operations = document.getElementById('operations');
+            operations.innerHTML = `${message}<br>${operations.innerHTML}`;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw edges first
+            heap.forEach((_, index) => {
+                const leftChild = 2 * index + 1;
+                const rightChild = 2 * index + 2;
+
+                if (leftChild < heap.length) {
+                    drawEdge(heap[index], heap[leftChild]);
+                }
+                if (rightChild < heap.length) {
+                    drawEdge(heap[index], heap[rightChild]);
+                }
+            });
+
+            // Draw nodes
+            heap.forEach(node => {
+                // Shadow
+                ctx.beginPath();
+                ctx.arc(node.x + 2, node.y + 2, RADIUS, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fill();
+
+                // Node circle
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, RADIUS, 0, 2 * Math.PI);
+                ctx.fillStyle = node.color;
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Node value
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = '14px Arial';
+                ctx.fillText(node.value.toString(), node.x, node.y);
+            });
+        }
+
+        function drawEdge(from, to) {
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Initial draw
+        draw();
+    </script>
+</body>
+</html>
